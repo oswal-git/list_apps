@@ -1,0 +1,56 @@
+// Este script parchea el plugin 'device_apps' para:
+// 1. Agregar 'namespace' en build.gradle (requerido por AGP 8.0+)
+// 2. Eliminar 'package' del AndroidManifest.xml (obligatorio en AGP 8.0+)
+
+// 🔒 Evitar ejecutar el parche más de una vez por compilación
+if (project.hasProperty('deviceAppsPatched') && project.deviceAppsPatched) {
+    println "ℹ️  Parche ya aplicado previamente. Saltando..."
+    return
+}
+project.ext.deviceAppsPatched = true
+
+def deviceAppsPath = "${rootProject.projectDir}/../../pub-cache/hosted/pub.dev/device_apps-2.2.0/android"
+println "✅ deviceAppsPath: $deviceAppsPath"
+
+// --- 1. Parchear build.gradle ---
+def buildGradleFile = new File(deviceAppsPath, 'build.gradle')
+
+if (buildGradleFile.exists()) {
+    def content = buildGradleFile.text
+
+    // Verifica si el namespace ya está presente para evitar duplicados
+    if (!content.contains('namespace ')) {
+        // Encuentra la línea que contiene 'compileSdkVersion' y agrega el namespace después
+        def patchedContent = content.replaceFirst(
+            /(compileSdkVersion\s+\d+)/,
+            '$1\n\n    namespace "fr.g123k.deviceapps"'
+        )
+
+        buildGradleFile.text = patchedContent
+        println "✅ Parche aplicado: 'namespace' agregado al build.gradle de 'device_apps'."
+    } else {
+        println "ℹ️  El archivo build.gradle de 'device_apps' ya tiene un namespace definido."
+    }
+} else {
+    println "⚠️  No se encontró el archivo build.gradle del plugin 'device_apps'."
+}
+
+// --- 2. Parchear AndroidManifest.xml ---
+def manifestFile = new File(deviceAppsPath, 'src/main/AndroidManifest.xml')
+
+if (manifestFile.exists()) {
+    def content = manifestFile.text
+
+    // Elimina el atributo package="..." del tag <manifest>
+    def patchedContent = content.replaceAll(/(<manifest[^>]*?)\s+package\s*=\s*["'][^"']*["']/, '$1')
+
+    // Si el contenido cambió, lo guardamos
+    if (patchedContent != content) {
+        manifestFile.text = patchedContent
+        println "✅ Parche aplicado: atributo 'package' eliminado de AndroidManifest.xml."
+    } else {
+        println "ℹ️  El archivo AndroidManifest.xml ya no tiene atributo 'package'."
+    }
+} else {
+    println "⚠️  No se encontró el archivo AndroidManifest.xml del plugin 'device_apps'."
+}
