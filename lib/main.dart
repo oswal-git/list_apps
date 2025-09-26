@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:list_apps/imported_apps_bloc.dart';
-import 'package:list_apps/installed_apps_bloc.dart';
+import 'package:list_apps/blocs/imported_apps/imported_apps_bloc.dart';
+import 'package:list_apps/blocs/installed_apps/installed_apps_bloc.dart';
 import 'pages/app_pages.dart';
 
 void main() => runApp(const AppBlocProvider());

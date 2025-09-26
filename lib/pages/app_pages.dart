@@ -5,9 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:device_apps/device_apps.dart';
 // import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:list_apps/imported_apps_bloc.dart';
-import 'package:list_apps/installed_apps_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:list_apps/blocs/imported_apps/imported_apps_bloc.dart';
+import 'package:list_apps/blocs/installed_apps/installed_apps_bloc.dart';
 import 'dart:io';
 
 import '../models/app_info.dart';

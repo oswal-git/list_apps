@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:device_apps/device_apps.dart';
-import 'package:list_apps/installed_apps_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:list_apps/blocs/installed_apps/installed_apps_bloc.dart';
 
 class AppsInstalledPage extends StatelessWidget {
   const AppsInstalledPage({super.key});
