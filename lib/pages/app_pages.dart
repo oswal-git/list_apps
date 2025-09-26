@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:device_apps/device_apps.dart';
 // import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:list_apps/imported_apps_bloc.dart';
+import 'package:list_apps/installed_apps_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
@@ -19,27 +22,7 @@ class AppPages extends StatefulWidget {
 }
 
 class _AppPagesState extends State<AppPages> {
-  List<Application> _apps = [];
-  List<AppInfo> _csvApps = [];
-  bool _loading = true;
   final PageController _pageController = PageController();
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchApps();
-  }
-
-  Future<void> _fetchApps() async {
-    List<Application> apps = await DeviceApps.getInstalledApplications(
-      includeAppIcons: true,
-      includeSystemApps: false,
-    );
-    setState(() {
-      _apps = apps;
-      _loading = false;
-    });
-  }
 
   // Future<void> _exportToCSV() async {
   //   var status = await Permission.manageExternalStorage.status;
@@ -118,39 +101,43 @@ class _AppPagesState extends State<AppPages> {
     String? selectedPath = await FilePicker.platform.getDirectoryPath();
     if (selectedPath == null) return;
 
-    List<AppInfo> appsInfo = [];
-    final timestamp = DateTime.now()
-        .toIso8601String()
-        .replaceAll(':', '')
-        .replaceAll('-', '')
-        .split('.')
-        .first;
-    final formattedTimestamp =
-        '${timestamp.substring(0, 8)}_${timestamp.substring(9, 13)}';
-    for (var app in _apps) {
-      String? iconBase64;
-      if (app is ApplicationWithIcon) {
-        iconBase64 = base64Encode(app.icon);
+    if (!mounted || !context.mounted) return;
+    final currentState = context.read<InstalledAppsBloc>().state;
+    if (currentState is InstalledAppsLoaded) {
+      List<AppInfo> appsInfo = [];
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '')
+          .replaceAll('-', '')
+          .split('.')
+          .first;
+      final formattedTimestamp =
+          '${timestamp.substring(0, 8)}_${timestamp.substring(9, 13)}';
+      for (var app in currentState.allApps) {
+        String? iconBase64;
+        if (app is ApplicationWithIcon) {
+          iconBase64 = base64Encode(app.icon);
+        }
+        appsInfo.add(
+          AppInfo(
+            app.appName,
+            app.packageName,
+            app.versionName ?? '',
+            app.installTimeMillis.toString(),
+            app.updateTimeMillis.toString(),
+            iconBase64,
+          ),
+        );
       }
-      appsInfo.add(
-        AppInfo(
-          app.appName,
-          app.packageName,
-          app.versionName ?? '',
-          app.installTimeMillis.toString(),
-          app.updateTimeMillis.toString(),
-          iconBase64,
-        ),
-      );
-    }
-    String jsonStr = jsonEncode(appsInfo.map((e) => e.toJson()).toList());
-    final path = '$selectedPath/apps_instaladas_$formattedTimestamp.json';
-    final file = File(path);
-    await file.writeAsString(jsonStr);
-    if (mounted && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Exportado a $path')));
+      String jsonStr = jsonEncode(appsInfo.map((e) => e.toJson()).toList());
+      final path = '$selectedPath/apps_instaladas_$formattedTimestamp.json';
+      final file = File(path);
+      await file.writeAsString(jsonStr);
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Exportado a $path')));
+      }
     }
   }
 
@@ -165,10 +152,9 @@ class _AppPagesState extends State<AppPages> {
     List<dynamic> jsonList = jsonDecode(content);
 
     List<AppInfo> apps = jsonList.map((e) => AppInfo.fromJson(e)).toList();
-    setState(() {
-      _csvApps = apps;
-    });
-    if (_csvApps.isNotEmpty) {
+    if (apps.isNotEmpty) {
+      if (!mounted) return;
+      context.read<ImportedAppsBloc>().add(ImportAppsFromJson(apps));
       _pageController.animateToPage(
         1,
         duration: const Duration(milliseconds: 300),
@@ -197,17 +183,7 @@ class _AppPagesState extends State<AppPages> {
       ),
       body: PageView(
         controller: _pageController,
-        children: [
-          AppsInstalledPage(
-            apps: _apps,
-            loading: _loading,
-            onRefresh: _fetchApps,
-          ),
-          AppsCSVPage(
-            apps: _csvApps,
-            installedPackages: _apps.map((a) => a.packageName).toList(),
-          ),
-        ],
+        children: [const AppsInstalledPage(), const AppsCSVPage()],
       ),
     );
   }

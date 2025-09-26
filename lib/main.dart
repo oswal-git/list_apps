@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:list_apps/imported_apps_bloc.dart';
+import 'package:list_apps/installed_apps_bloc.dart';
 import 'pages/app_pages.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(const AppBlocProvider());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AppBlocProvider extends StatelessWidget {
+  const AppBlocProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(title: 'Lista de Apps', home: AppPages(), debugShowCheckedModeBanner: false);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => InstalledAppsBloc()..add(LoadInstalledApps()),
+        ),
+        BlocProvider(create: (context) => ImportedAppsBloc()),
+      ],
+      child: const MaterialApp(
+        title: 'Lista de Apps',
+        home: AppPages(),
+        debugShowCheckedModeBanner: false,
+      ),
+    );
   }
 }
